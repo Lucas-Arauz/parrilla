@@ -1,0 +1,21 @@
+# Ignorar carpetas de build
+Debug/
+Release/
+.build/
+.ipch/
+
+# Ignorar archivos de Eclipse
+*.launch
+*.log
+.cproject
+.project
+.settings/
+.metadata/
+
+# Ignorar binarios
+*.o
+*.d
+*.elf
+*.bin
+*.hex
+*.map
