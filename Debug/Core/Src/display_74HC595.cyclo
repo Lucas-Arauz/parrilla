@@ -1,0 +1,12 @@
+../Core/Src/display_74HC595.c:59:6:Display_PIN_EN_Assigment	1
+../Core/Src/display_74HC595.c:64:6:Display_PIN_LACLK_Assigment	1
+../Core/Src/display_74HC595.c:69:6:Display_PIN_SHCLK_Assigment	1
+../Core/Src/display_74HC595.c:74:6:Display_PIN_RESET_Assigment	1
+../Core/Src/display_74HC595.c:79:6:Display_PIN_DATA_Assigment	1
+../Core/Src/display_74HC595.c:84:6:Display_PIN_UNIDAD_Assigment	1
+../Core/Src/display_74HC595.c:89:6:Display_PIN_DECENA_Assigment	1
+../Core/Src/display_74HC595.c:94:6:Display_PIN_CENTENA_Assigment	1
+../Core/Src/display_74HC595.c:99:6:Display_Init	1
+../Core/Src/display_74HC595.c:105:6:Display_SendByte	2
+../Core/Src/display_74HC595.c:116:6:Display_Update	1
+../Core/Src/display_74HC595.c:120:6:Display_UpdateDigit	8

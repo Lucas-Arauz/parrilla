@@ -1,0 +1,2 @@
+../Core/Src/MAX6675.c:15:6:MAX6675_Init	24	static
+../Core/Src/MAX6675.c:22:7:MAX6675_ReadTemperature	24	static
