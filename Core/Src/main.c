@@ -22,8 +22,12 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <display_74HC595.h>
 #include <MAX6675.h>
+
 
 /* USER CODE END Includes */
 
@@ -67,7 +71,7 @@ typedef enum {
 
 #define NUM_MEDICIONES 15
 
-#define KP 4.0f
+//#define KP 4.0f
 
 /* USER CODE END PD */
 
@@ -81,6 +85,8 @@ SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
+
+UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 
@@ -137,9 +143,12 @@ static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 void config_HC595();
+void Send_Debug_Info(float averageTemp, float error, float output, uint32_t relayOnTimeMs, uint8_t relayState);
+void UART_Receive_And_Parse_Command(void);
 
 /* USER CODE END PFP */
 
@@ -180,6 +189,7 @@ int main(void)
   MX_SPI1_Init();
   MX_TIM1_Init();
   MX_TIM2_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
   MAX6675_Init(&hspi1, MAX6675_CS_GPIO_Port, MAX6675_CS_Pin);	// Iniciliza el MAX6675 (termocupla)
@@ -416,6 +426,8 @@ int main(void)
 				}
 
 				controlar = false;	// Bajar bandera de control
+				Send_Debug_Info(temperatura_filtrada, error, output, relayOnTimeMs, relayState);
+
 	  			/*
 	  			else if(cont_duty_cycle == 0) {
 					if(duty_cycle < 0)
@@ -458,6 +470,7 @@ int main(void)
 
 	  }
   }
+  UART_Receive_And_Parse_Command();
 
     /* USER CODE END WHILE */
 
@@ -635,6 +648,39 @@ static void MX_TIM2_Init(void)
 }
 
 /**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -698,12 +744,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(TOUCH_TEMPMAS_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : TAPA_Pin */
-  GPIO_InitStruct.Pin = TAPA_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(TAPA_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI9_5_IRQn, 1, 0);
@@ -773,6 +813,45 @@ void config_HC595() {
   	Display_PIN_DECENA_Assigment(DISP_DECENA_GPIO_Port, DISP_DECENA_Pin);
   	Display_PIN_CENTENA_Assigment(DISP_CENTENA_GPIO_Port, DISP_CENTENA_Pin);
 }
+
+void Send_Debug_Info(float averageTemp, float error, float output, uint32_t relayOnTimeMs, uint8_t relayState) {
+    char buffer[128];
+    snprintf(buffer, sizeof(buffer),
+        "T=%.1f°C | Error=%.1f | PID=%.1f | RelayON=%ums | Estado=%s\r\n",
+        averageTemp, error, output, (unsigned int)relayOnTimeMs, relayState ? "ON" : "OFF"
+    );
+    HAL_UART_Transmit(&huart1, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+}
+
+void UART_Receive_And_Parse_Command(void) {
+    char rxBuffer[64];
+    uint8_t rxChar;
+    uint8_t idx = 0;
+
+    // Leer hasta Enter o hasta llenar el buffer
+    while (HAL_UART_Receive(&huart1, &rxChar, 1, HAL_MAX_DELAY) == HAL_OK && idx < sizeof(rxBuffer) - 1) {
+        if (rxChar == '\r' || rxChar == '\n') break; // Fin de línea
+        rxBuffer[idx++] = rxChar;
+    }
+    rxBuffer[idx] = '\0';
+
+    // Parseo básico
+    if (strncmp(rxBuffer, "KP=", 3) == 0) {
+        Kp = atof(&rxBuffer[3]);
+    } else if (strncmp(rxBuffer, "KI=", 3) == 0) {
+        Ki = atof(&rxBuffer[3]);
+    } else if (strncmp(rxBuffer, "KD=", 3) == 0) {
+        Kd = atof(&rxBuffer[3]);
+    } else if (strncmp(rxBuffer, "SP=", 3) == 0) {
+        setpoint = atof(&rxBuffer[3]);
+    }
+
+    // Confirmación
+    char msg[64];
+    snprintf(msg, sizeof(msg), "Parametros PID: KP=%.2f KI=%.2f KD=%.2f SP=%d\r\n", Kp, Ki, Kd, setpoint);
+    HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+}
+
 /* USER CODE END 4 */
 
 /**

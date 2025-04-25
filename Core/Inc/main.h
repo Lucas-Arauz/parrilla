@@ -96,9 +96,6 @@ void Error_Handler(void);
 #define TOUCH_TEMPMAS_Pin GPIO_PIN_8
 #define TOUCH_TEMPMAS_GPIO_Port GPIOA
 #define TOUCH_TEMPMAS_EXTI_IRQn EXTI9_5_IRQn
-#define TAPA_Pin GPIO_PIN_9
-#define TAPA_GPIO_Port GPIOA
-#define TAPA_EXTI_IRQn EXTI9_5_IRQn
 #define MAX6675_NSS_Pin GPIO_PIN_15
 #define MAX6675_NSS_GPIO_Port GPIOA
 #define MAX6675_SCK_Pin GPIO_PIN_3
