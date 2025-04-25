@@ -415,7 +415,7 @@ int main(void)
 					}
 				}
 
-				controlar = false;
+				controlar = false;	// Bajar bandera de control
 	  			/*
 	  			else if(cont_duty_cycle == 0) {
 					if(duty_cycle < 0)
